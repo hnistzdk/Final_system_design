@@ -1,0 +1,982 @@
+/**
+ * @Description
+ * @Author zdk
+ * @Date 2020/11/1 16:49
+ *
+ * 题目6学生成绩管理系统的设计
+ * 1、问题描述﹐学生信息包括:学号、姓名、性别、年龄、班级等信息。除了包括学生所有信息外，
+ * 还包括专业、英语、程序设计和高等数学等课程。设计一程序能够对学生成绩进行管理，
+ * 2、功能要求
+ * (1）添加功能程序能够添加不同学生的记录，提供选择界面供用户选择所要添加的类别，要求学号要唯一，
+ * 如果添加了重复学号的记录时，则提示数据添加重复并取消添加。
+ * (2）查询功能:可根据学号、姓名等信息.对已添加的学生记录进行查询，如果未找到，给出相应的提示信息，
+ * 如果找到，则显示相应的记录信息.
+ * (3)显示功能:可显示当前系统中所有学生的记录，每条记录占据一行。
+ * (4）编辑功能:可根据查询结果对相应的记录进行修改，修改时注意学号的唯一性。
+ * (5)册除功能:主要实现对已添加的学生记录进行删除.如果当前系统中没有相应的记录,则提示“记录为空!”并返回操作
+ * (6）统计功能。能根据多种参数进行统计。能统计学生人数、总分、单科的平均分等。
+ * (7）保存功能:可将当前系统中各类记录存入文件中，存入方式任意。
+ * (8）读取功能:可将保存在文件中的信息读入到当前系统中，供用户进行使用。
+ * (9）排序功能，可按总分和单科成绩排名次
+ */
+package FinalSystemDesign;
+
+import javafx.application.Application;
+import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleIntegerProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.*;
+import javafx.scene.*;
+import javafx.scene.control.*;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.sql.*;
+import java.util.*;
+
+//添加
+class Add {
+    public static void add()//学号、姓名、性别、年龄、专业、班级、课程号、课程名、分数
+    {
+        Button bt=new Button("添加");
+        TextField number=new TextField();
+        number.setPromptText("输入学号");
+        TextField name=new TextField();
+        name.setPromptText("输入姓名");
+        TextField age=new TextField();
+        age.setPromptText("输入年龄");
+        TextField cNo=new TextField();
+        cNo.setPromptText("输入课程号");
+        TextField grade=new TextField();
+        grade.setPromptText("输入分数");
+
+        String[] Sex={"男","女"};
+        ObservableList<String> item= FXCollections.observableArrayList(Sex);
+        ComboBox<String> sex=new ComboBox<>(item);sex.setValue("男");
+        String[] ma={"计科","软件"};
+        ObservableList<String> item2=FXCollections.observableArrayList(ma);
+        ComboBox<String> major=new ComboBox<>(item2);major.setValue("计科");
+
+        String[] c={"1班","2班"};
+        ObservableList<String> item1=FXCollections.observableArrayList(c);
+        ComboBox<String> cClass=new ComboBox<>(item1);cClass.setValue("1班");
+
+        String[] le={"高等数学","线性代数","大学英语","数据结构","数据库","C语言","JavaSE"};
+        ObservableList<String> item3=FXCollections.observableArrayList(le);
+        ComboBox<String> courseName=new ComboBox<>(item3);courseName.setValue("高等数学");
+
+        String[] cN={"0001","0002","0003","0004","0005","0006","0007"};
+        ObservableList<String> item4=FXCollections.observableArrayList(cN);
+        ComboBox<String> courseNumber=new ComboBox<>(item4);courseNumber.setValue("0001");
+        //让选择课程和课程号同步
+        courseNumber.setOnAction(e->{
+            if(Objects.equals(courseNumber.getValue(), "0001")) {
+                courseName.setValue("高等数学");
+            } else if(Objects.equals(courseNumber.getValue(), "0002")) {
+                courseName.setValue("线性代数");
+            } else if(Objects.equals(courseNumber.getValue(), "0003")) {
+                courseName.setValue("大学英语");
+            } else if(Objects.equals(courseNumber.getValue(), "0004")) {
+                courseName.setValue("数据结构");
+            } else if(Objects.equals(courseNumber.getValue(), "0005")) {
+                courseName.setValue("数据库");
+            } else if(Objects.equals(courseNumber.getValue(), "0006")) {
+                courseName.setValue("C语言");
+            } else {
+                courseName.setValue("JavaSE");
+            }
+        });
+        courseName.setOnAction(e->{
+            if(Objects.equals(courseName.getValue(), "高等数学")) {
+                courseNumber.setValue("0001");
+            } else if(Objects.equals(courseName.getValue(), "线性代数")) {
+                courseNumber.setValue("0002");
+            } else if(Objects.equals(courseName.getValue(), "大学英语")) {
+                courseNumber.setValue("0003");
+            } else if(Objects.equals(courseName.getValue(), "数据结构")) {
+                courseNumber.setValue("0004");
+            } else if(Objects.equals(courseName.getValue(), "数据库")) {
+                courseNumber.setValue("0005");
+            } else if(Objects.equals(courseName.getValue(), "C语言")) {
+                courseNumber.setValue("0006");
+            } else {
+                courseNumber.setValue("0007");
+            }
+        });
+        //界面元素
+        GridPane gridPane=new GridPane();
+        final Label l1=new Label("学号");
+        final Label l2=new Label("姓名");
+        final Label l3=new Label("性别");
+        final Label l4=new Label("年龄");
+        final Label l5=new Label("专业");
+        final Label l6=new Label("班级");
+        final Label l7=new Label("课程号");
+        final Label l8=new Label("课程名");
+        final Label l9=new Label("分数");
+        gridPane.add(l1, 0, 1);
+        gridPane.add(l2, 0, 2);
+        gridPane.add(l3, 0, 3);
+        gridPane.add(l4, 0, 4);
+        gridPane.add(l5, 0, 5);
+        gridPane.add(l6, 0, 6);
+        gridPane.add(l7, 0, 7);
+        gridPane.add(l8, 0, 8);
+        gridPane.add(l9, 0, 9);
+        gridPane.add(number, 1, 1);
+        gridPane.add(name, 1, 2);
+        gridPane.add(sex, 1, 3);
+        gridPane.add(age, 1, 4);
+        gridPane.add(major, 1, 5);
+        gridPane.add(cClass, 1, 6);
+        gridPane.add(courseNumber,1,7);
+        gridPane.add(courseName, 1, 8);
+        gridPane.add(grade, 1, 9);
+        gridPane.add(bt,1,11);
+
+        bt.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> bt.setCursor(Cursor.HAND));
+        bt.addEventHandler(MouseEvent.MOUSE_EXITED, e -> bt.setCursor(Cursor.DEFAULT));
+        //点击添加按钮后进行事件处理
+        bt.setOnAction(e->{
+            String sNo=number.getText();
+            String sName=name.getText();
+            String sSex=sex.getValue();
+            String sAge=age.getText();
+            String sDept=major.getValue();
+            String sClass=cClass.getValue();
+            String cNumber=courseNumber.getValue();
+            String sCourse=courseName.getValue();
+            String cGrade=grade.getText();
+            String driver="com.mysql.cj.jdbc.Driver";
+            String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+            String user = "root";
+            String password = "root";
+            String selectSql = "SELECT * FROM student WHERE sNo=? AND cNo=?";
+            String insertSql = "INSERT INTO student(sNo,sName,sSex,sAge,sDept,sClass,cNo,cName,grade) VALUES(?,?,?,?,?,?,?,?,?)";
+            Connection conn = null;
+            PreparedStatement ps = null;
+            ResultSet resultSet = null;
+            try {
+                Class.forName(driver);
+                conn = DriverManager.getConnection(url, user, password);
+                ps = conn.prepareStatement(selectSql);
+                ps.setString(1, sNo);
+                ps.setString(2, cNumber);
+                resultSet=ps.executeQuery();
+                //先做一次查询 如果没有查询到则添加
+                if(!resultSet.next())
+                {
+                    ps = conn.prepareStatement(insertSql);
+                    ps.setString(1,sNo );
+                    ps.setString(2,sName );
+                    ps.setString(3, sSex);
+                    ps.setString(4, sAge);
+                    ps.setString(5, sDept);
+                    ps.setString(6, sClass);
+                    ps.setString(7, cNumber);
+                    ps.setString(8, sCourse);
+                    ps.setString(9, cGrade);
+                    int count = ps.executeUpdate();
+                    Alert alert=new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("提示");
+                    alert.setHeaderText(null);
+                    alert.setContentText("添加成功"+count+"条信息");
+                    alert.showAndWait();
+                }
+                else
+                {
+                    Alert alert=new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("添加结果");
+                    alert.setHeaderText(null);
+                    alert.setContentText("数据添加重复");
+                    alert.showAndWait();
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            } finally {
+                try {
+                    if(resultSet!=null) {
+                        resultSet.close();
+                    }
+                    if(ps!=null) {
+                        ps.close();
+                    }
+                    if(conn!=null) {
+                        conn.close();
+                    }
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            }
+        });
+        Stage stage=new Stage();
+        Scene scene=new Scene(gridPane,500,250);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setScene(scene);stage.setTitle("添加");
+        stage.show();
+    }
+}
+
+//查询编辑
+class Query_Edit{
+    public static void query()
+    {
+        TextField textField1=new TextField();
+        TextField textField2=new TextField();
+        TextField textField3=new TextField();
+
+        HBox hBox=new HBox(20);
+        textField1.setPromptText("输入学号");
+        textField2.setPromptText("输入姓名");
+        textField3.setPromptText("输入课程号");
+        Label label1=new Label("学号：");
+        Label label2=new Label("姓名：");
+        Label label3=new Label("课程号");
+        Button bt=new Button("查询");
+        hBox.getChildren().addAll(label1,textField1,label2,textField2,label3,textField3,bt);
+        Stage stage=new Stage();
+        bt.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> bt.setCursor(Cursor.HAND));
+        bt.addEventHandler(MouseEvent.MOUSE_EXITED, e -> bt.setCursor(Cursor.DEFAULT));
+        //处理查询按钮事件
+        bt.setOnAction(a->
+                {
+                    String driver="com.mysql.cj.jdbc.Driver";
+                    String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+                    String user = "root";
+                    String password = "root";
+                    String selectSql = "SELECT * FROM student WHERE sNo=? AND sName=? AND cNo=?";
+                    try {
+                        Class.forName(driver);
+                        Connection conn = DriverManager.getConnection(url, user, password);
+                        String sNo=textField1.getText();
+                        String Name=textField2.getText();
+                        String cNumber=textField3.getText();
+                        PreparedStatement ps = conn.prepareStatement(selectSql);
+                        ps.setString(1, sNo);
+                        ps.setString(2, Name);
+                        ps.setString(3, cNumber);
+                        ResultSet resultSet=ps.executeQuery();
+                        if(resultSet.next())//查询到以后 显示出来并允许用户编辑
+                        {
+                            GridPane gridPane=new GridPane();
+                            final Label l1=new Label("学号");
+                            final Label l2=new Label("姓名");
+                            final Label l3=new Label("性别");
+                            final Label l4=new Label("年龄");
+                            final Label l5=new Label("专业");
+                            final Label l6=new Label("班级");
+                            final Label l7=new Label("课程号");
+                            final Label l8=new Label("课程名");
+                            final Label l9=new Label("分数");
+                            Button edit=new Button("编辑");
+                            Button yes=new Button("确认");
+                            //为防止错误修改导致数据混乱 将除开科目成绩 其他文本区域全部设置为不可编辑
+                            TextField sNumber=new TextField(resultSet.getString(1));
+                            sNumber.setEditable(false);
+                            TextField sName=new TextField(Name);
+                            sName.setEditable(false);
+                            TextField sSex=new TextField(resultSet.getString(3));
+                            sSex.setEditable(false);
+                            TextField sAge=new TextField(resultSet.getString(4));
+                            sAge.setEditable(false);
+                            TextField sDept=new TextField(resultSet.getString(5));
+                            sDept.setEditable(false);
+                            TextField sClass=new TextField(resultSet.getString(6));
+                            sClass.setEditable(false);
+                            TextField cNo=new TextField(resultSet.getString(7));
+                            cNo.setEditable(false);
+                            TextField cName=new TextField(resultSet.getString(8));
+                            cName.setEditable(false);
+                            TextField grade=new TextField(resultSet.getString(9));
+                            gridPane.add(sNumber, 1, 1);
+                            gridPane.add(sName, 1, 2);
+                            gridPane.add(sSex, 1, 3);
+                            gridPane.add(sAge, 1, 4);
+                            gridPane.add(sDept, 1, 5);
+                            gridPane.add(sClass, 1, 6);
+                            gridPane.add(cNo,1,7);
+                            gridPane.add(cName, 1, 8);
+                            gridPane.add(grade, 1, 9);
+                            gridPane.add(edit,1,11);
+                            gridPane.add(l1, 0, 1);
+                            gridPane.add(l2, 0, 2);
+                            gridPane.add(l3, 0, 3);
+                            gridPane.add(l4, 0, 4);
+                            gridPane.add(l5, 0, 5);
+                            gridPane.add(l6, 0, 6);
+                            gridPane.add(l7, 0, 7);
+                            gridPane.add(l8, 0, 8);
+                            gridPane.add(l9, 0, 9);
+                            gridPane.add(yes,2,11);
+                            Stage stage1=new Stage();
+                            Scene scene=new Scene(gridPane,500,250);
+                            scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+                            stage1.setScene(scene);
+                            stage1.show();
+                            edit.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> edit.setCursor(Cursor.HAND));
+                            edit.addEventHandler(MouseEvent.MOUSE_EXITED, e -> edit.setCursor(Cursor.DEFAULT));
+                            //编辑按钮事件处理 对数据进行更新
+                            edit.setOnAction(e->{
+                                try {
+                                    Connection conn1 = DriverManager.getConnection(url, user, password);
+                                    String updateSql = "UPDATE student SET grade=? WHERE sNo=? and sName=? and sSex=? and sAge=? and sDept=? and sClass=? and cNo=? and cName=?";
+                                    PreparedStatement ps1=conn1.prepareStatement(updateSql);
+                                    ps1.setInt(1, Integer.parseInt(grade.getText()));
+                                    ps1.setString(2, sNumber.getText());
+                                    ps1.setString(3, sName.getText());
+                                    ps1.setString(4, sSex.getText());
+                                    ps1.setString(5, sAge.getText());
+                                    ps1.setString(6, sDept.getText());
+                                    ps1.setString(7, sClass.getText());
+                                    ps1.setString(8, cNo.getText());
+                                    ps1.setString(9, cName.getText());
+                                    Alert alert=new Alert(Alert.AlertType.INFORMATION);//创建信息对话框
+                                    alert.setTitle("提示");
+                                    alert.setHeaderText(null);
+                                    int count=ps1.executeUpdate();
+                                    alert.setContentText("编辑了"+count+"条信息");
+                                    alert.showAndWait();
+                                }catch (Exception e2){e2.printStackTrace();}
+                            });
+                            yes.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> yes.setCursor(Cursor.HAND));
+                            yes.addEventHandler(MouseEvent.MOUSE_EXITED, e -> yes.setCursor(Cursor.DEFAULT));
+                            //点击确认以后窗口关闭
+                            yes.setOnAction(e-> stage1.close());
+                        }
+                        else {
+                            Alert alert=new Alert(Alert.AlertType.INFORMATION);
+                            alert.setTitle("查询结果");
+                            alert.setHeaderText(null);
+                            alert.setContentText("未找到该学生信息");
+                            alert.showAndWait();
+                        }
+                    }
+                    catch (Exception e1){
+                        e1.printStackTrace();
+                    }
+                }
+        );
+        Scene scene=new Scene(hBox);
+        stage.setScene(scene);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setTitle("查询");
+        stage.show();
+    }
+}
+
+//显示的对象的定义
+class Display {
+    static String driver="com.mysql.cj.jdbc.Driver";
+    static String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+    static String user = "root";
+    static String password = "root";
+    //TableView参数中对象的定义
+    static class Student
+    {
+        final SimpleStringProperty studentNo=new SimpleStringProperty();
+        final SimpleStringProperty studentName=new SimpleStringProperty();
+        final SimpleStringProperty studentSex=new SimpleStringProperty();
+        final SimpleStringProperty studentAge=new SimpleStringProperty();
+        final SimpleStringProperty studentDept=new SimpleStringProperty();
+        final SimpleStringProperty studentClass=new SimpleStringProperty();
+        final SimpleStringProperty courseNo=new SimpleStringProperty();
+        final SimpleStringProperty courseName=new SimpleStringProperty();
+        final SimpleIntegerProperty Grade=new SimpleIntegerProperty();
+        public Student(String sNo, String sName, String sSex, String sAge, String sDept, String sClass, String cNo, String cName, int grade)
+        {
+            setSNo(sNo);setSName(sName);setSSex(sSex);
+            setSAge(sAge);setSDept(sDept);setSClass(sClass);
+            setCNo(cNo);setCName(cName);setGrade(grade);
+        }
+        public Student() { }
+
+        public void setSNo(String sNo) { this.studentNo.set(sNo); }
+        public void setSName(String sName) { this.studentName.set(sName); }
+        public void setSSex(String sSex) { this.studentSex.set(sSex); }
+        public void setSAge(String sAge) { this.studentAge.set(sAge); }
+        public void setSDept(String sDept) { this.studentDept.set(sDept); }
+        public void setSClass(String sClass) { this.studentClass.set(sClass); }
+        public void setCNo(String cNo) { this.courseNo.set(cNo); }
+        public void setCName(String cName) { this.courseName.set(cName); }
+        public void setGrade(int grade) { this.Grade.set(grade); }
+    }
+    //返回TableView对象
+    public static TableView displayTable()
+    {
+        TableView<Student> table=new TableView<>();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setEditable(true);
+        TableColumn<Student, String> sNoColumn=new TableColumn<>("studentNo");
+        TableColumn<Student, String> sNameColumn=new TableColumn<>("studentName");
+        TableColumn<Student, String> sSexColumn=new TableColumn<>("studentSex");
+        TableColumn<Student, String> sAgeColumn=new TableColumn<>("studentAge");
+        TableColumn<Student, String> sDeptColumn=new TableColumn<>("studentDept");
+        TableColumn<Student, String> sClassColumn= new TableColumn<>("studentClass");
+        TableColumn<Student, String> cNoColumn= new TableColumn<>("courseNo");
+        TableColumn<Student, String> cNameColumn=new TableColumn<>("courseName");
+        TableColumn<Student, Integer> gradeColumn= new TableColumn<>("Grade");
+        sNoColumn.setMinWidth(100);sNameColumn.setMinWidth(100);sSexColumn.setMinWidth(100);
+        sAgeColumn.setMinWidth(100);sDeptColumn.setMinWidth(100);sClassColumn.setMinWidth(100);
+        cNoColumn.setMinWidth(100);cNameColumn.setMinWidth(100);gradeColumn.setMinWidth(100);
+
+        sNoColumn.setCellValueFactory(e->e.getValue().studentNo);
+        sNameColumn.setCellValueFactory(e->e.getValue().studentName);
+        sSexColumn.setCellValueFactory(e->e.getValue().studentSex);
+        sAgeColumn.setCellValueFactory(e->e.getValue().studentAge);
+        sDeptColumn.setCellValueFactory(e->e.getValue().studentDept);
+        sClassColumn.setCellValueFactory(e->e.getValue().studentClass);
+        cNoColumn.setCellValueFactory(e->e.getValue().courseNo);
+        cNameColumn.setCellValueFactory(e->e.getValue().courseName);
+        gradeColumn.setCellValueFactory(e->e.getValue().Grade.asObject());
+        ObservableList<Student> data =FXCollections.observableArrayList();
+
+        Connection connection= null;Statement statement= null;ResultSet resultSet = null;
+        try {
+            Class.forName(driver);
+            connection = DriverManager.getConnection(url, user, password);
+            statement = connection.createStatement();
+            resultSet=statement.executeQuery("SELECT * FROM student ");
+            while(resultSet.next()) {
+                data.add(new Student(resultSet.getString(1),
+                        resultSet.getString(2),resultSet.getString(3),
+                        resultSet.getString(4), resultSet.getString(5),
+                        resultSet.getString(6),resultSet.getString(7),
+                        resultSet.getString(8),resultSet.getInt(9)));
+            }
+            table.getColumns().addAll(sNoColumn,sNameColumn,sSexColumn,sAgeColumn,sDeptColumn,
+                    sClassColumn,cNoColumn,cNameColumn,gradeColumn);
+            table.setItems(data);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        finally {
+            try {
+                if(resultSet!=null) {
+                    resultSet.close();
+                }
+                if(statement!=null) {
+                    statement.close();
+                }
+                if(connection!=null) {
+                    connection.close();
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        return table;
+    }
+}
+
+//删除
+class Delete {
+    public static void delete()
+    {
+        TextField textField1=new TextField();
+        TextField textField2=new TextField();
+        TextField textField3=new TextField();
+        textField1.setPromptText("输入学号");
+        textField2.setPromptText("输入姓名");
+        textField3.setPromptText("输入课程号");
+        Label label1=new Label("学号：");
+        Label label2=new Label("姓名：");
+        Label label3=new Label("课程号");
+        HBox hBox=new HBox(20);
+        Button bt=new Button("删除");
+        hBox.getChildren().addAll(label1,textField1,label2,textField2,label3,textField3,bt);
+        bt.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> bt.setCursor(Cursor.HAND));
+        bt.addEventHandler(MouseEvent.MOUSE_EXITED, e -> bt.setCursor(Cursor.DEFAULT));
+        bt.setOnAction(e->{
+            String driver="com.mysql.cj.jdbc.Driver";
+            String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+            String user = "root";
+            String password = "root";
+            String selectSql="SELECT * FROM student WHERE sNo=? AND sName=? AND cNo=?";
+            String deleteSql = "DELETE FROM student WHERE sNo=? AND sName=? AND cNo=?";
+            try {
+                Class.forName(driver);
+                Connection conn = DriverManager.getConnection(url, user, password);
+                String sNo = textField1.getText();
+                String sName=textField2.getText();
+                String cNumber = textField3.getText();
+                PreparedStatement ps = conn.prepareStatement(selectSql);
+                ps.setString(1, sNo);
+                ps.setString(2, sName);
+                ps.setString(3, cNumber);
+                ResultSet resultSet = ps.executeQuery();
+                if (resultSet.next())//是否查询到对应成绩信息
+                {
+                    Alert alert=new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("提示");
+                    alert.setHeaderText(null);
+                    ps=conn.prepareStatement(deleteSql);
+                    ps.setString(1, sNo);
+                    ps.setString(2, sName);
+                    ps.setString(3, cNumber);
+                    int count=ps.executeUpdate();
+                    alert.setContentText("删除了"+count+"条信息");
+                    alert.setTitle("提示");alert.showAndWait();
+                }
+                else
+                {
+                    Alert alert=new Alert(Alert.AlertType.INFORMATION);
+                    alert.setTitle("查询结果");
+                    alert.setHeaderText(null);
+                    alert.setContentText("记录为空");
+                    alert.showAndWait();
+                }
+            }catch (Exception e2){
+                e2.printStackTrace();
+            }
+        });
+        Stage stage=new Stage();
+        Scene scene=new Scene(hBox);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setScene(scene);stage.setTitle("删除");
+        stage.show();
+    }
+}
+
+//统计
+class Statistics {
+    public static String driver="com.mysql.cj.jdbc.Driver";
+    public static String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+    public static String user = "root";
+    public static String password = "root";
+    //同样 定义TableView参数中的类sta 为了简化代码继承了Display中的Student类
+    static class sta extends Display.Student
+    {
+        final SimpleIntegerProperty totalScore=new SimpleIntegerProperty();
+        final SimpleIntegerProperty rank=new SimpleIntegerProperty();
+        public sta(String sNo, String sName, String sSex, String sAge, String sDept, String sClass,int totalScore,int rank)
+        {
+            super();setSNo(sNo);setSName(sName);setSSex(sSex);setSAge(sAge);setSDept(sDept);
+            setSClass(sClass);setTotalScore(totalScore);setRank(rank);
+        }
+        public sta() { }
+        public void setTotalScore(int totalScore) { this.totalScore.set(totalScore); }
+        public void setRank(int rank) {this.rank.set(rank);}
+    }
+    //这是显示课程号、名、和平均分的TableView参数类的定义
+    static class course
+    {
+        final SimpleStringProperty cNo=new SimpleStringProperty();
+        final SimpleStringProperty cName=new SimpleStringProperty();
+        final SimpleDoubleProperty average=new SimpleDoubleProperty();
+        public course(String cNo,String cName,double average)
+        { setcNo(cNo);setcName(cName);setAverage(average); }
+        public void setcNo(String cNo) { this.cNo.set(cNo); }
+        public void setcName(String cName) { this.cName.set(cName); }
+        public void setAverage(double average) { this.average.set(average); }
+    }
+    //统计的方法
+    public static void statistics()
+    {
+        //记录学生人数
+        int numberOfStudents = 0;
+        TableView table=new TableView();
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setEditable(true);
+        TableColumn<sta, String> sNoColumn=new TableColumn<>("studentNo");
+        TableColumn<sta, String> sNameColumn=new TableColumn<>("studentName");
+        TableColumn<sta, String> sSexColumn=new TableColumn<>("studentSex");
+        TableColumn<sta, String> sAgeColumn=new TableColumn<>("studentAge");
+        TableColumn<sta, String> sDeptColumn=new TableColumn<>("studentDept");
+        TableColumn<sta, String> sClassColumn= new TableColumn<>("studentClass");
+        TableColumn<sta,Integer> totalScoreColumn= new TableColumn<>("totalScore");
+        TableColumn<sta,Integer> rankColumn= new TableColumn<>("rank");
+        sNoColumn.setMinWidth(100);sNameColumn.setMinWidth(100);sSexColumn.setMinWidth(100);
+        sAgeColumn.setMinWidth(100);sDeptColumn.setMinWidth(100);sClassColumn.setMinWidth(100);
+        totalScoreColumn.setMinWidth(100);rankColumn.setMinWidth(100);
+        sNoColumn.setCellValueFactory(e->e.getValue().studentNo);
+        sNameColumn.setCellValueFactory(e->e.getValue().studentName);
+        sSexColumn.setCellValueFactory(e->e.getValue().studentSex);
+        sAgeColumn.setCellValueFactory(e->e.getValue().studentAge);
+        sDeptColumn.setCellValueFactory(e->e.getValue().studentDept);
+        sClassColumn.setCellValueFactory(e->e.getValue().studentClass);
+        totalScoreColumn.setCellValueFactory(e->e.getValue().totalScore.asObject());
+        rankColumn.setCellValueFactory(e->e.getValue().rank.asObject());
+        table.getColumns().addAll(sNoColumn,sNameColumn,sSexColumn,sAgeColumn,sDeptColumn,
+                sClassColumn,totalScoreColumn,rankColumn);
+        ObservableList<sta> data =FXCollections.observableArrayList();
+        String sql="SELECT COUNT(DISTINCT sNo),sNo,sName,sSex,sAge,sDept,sClass,SUM(grade) FROM student GROUP BY sNo ORDER BY SUM(grade) DESC";
+        Connection connection= null;Statement statement= null;ResultSet resultSet = null;
+        try {
+            Class.forName(driver);
+            connection = DriverManager.getConnection(url, user, password);
+            statement = connection.createStatement();
+            resultSet=statement.executeQuery(sql);
+            int rank=1;
+            while(resultSet.next())
+            {
+                numberOfStudents+=resultSet.getInt(1);
+                data.add(new sta(resultSet.getString(2),
+                        resultSet.getString(3),resultSet.getString(4),
+                        resultSet.getString(5), resultSet.getString(6),
+                        resultSet.getString(7),resultSet.getInt(8),
+                        rank++));
+            }
+            table.setItems(data);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        finally {
+            try {
+                if(resultSet!=null) {
+                    resultSet.close();
+                }
+                if(statement!=null) {
+                    statement.close();
+                }
+                if(connection!=null) {
+                    connection.close();
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        //统计平均分表格
+        TableView tableView=new TableView();
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        tableView.setEditable(true);
+        TableColumn<course, String> cNoColumn=new TableColumn<>("cNo");
+        TableColumn<course, String> cNameColumn=new TableColumn<>("cName");
+        TableColumn<course, Double> averageColumn=new TableColumn<>("average");
+        cNoColumn.setMinWidth(100);cNameColumn.setMinWidth(100);averageColumn.setMinWidth(100);
+        cNoColumn.setCellValueFactory(e->e.getValue().cNo);
+        cNameColumn.setCellValueFactory(e->e.getValue().cName);
+        averageColumn.setCellValueFactory(e->e.getValue().average.asObject());
+        tableView.getColumns().addAll(cNoColumn,cNameColumn,averageColumn);
+        ObservableList<course> data1 =FXCollections.observableArrayList();
+        String sql1="select cNo,cName,avg(grade) from student group by cNo";
+        try {
+            Class.forName(driver);
+            connection = DriverManager.getConnection(url, user, password);
+            statement = connection.createStatement();
+            resultSet=statement.executeQuery(sql1);
+            while(resultSet.next())
+            {
+                data1.add(new course(resultSet.getString(1),
+                        resultSet.getString(2), resultSet.getDouble(3)));
+            }
+            tableView.setItems(data1);
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        finally {
+            try {
+                if(resultSet!=null) {
+                    resultSet.close();
+                }
+                if(statement!=null) {
+                    statement.close();
+                }
+                if(connection!=null) {
+                    connection.close();
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        //界面
+        final Label label = new Label("统计");
+        final Label label1=new Label("学生总人数为："+numberOfStudents);
+        final Label label2=new Label("各课程平均分");
+        label.setFont(new Font("Arial", 20));
+        label1.setFont(new Font("Arial", 16));
+        label2.setFont(new Font("Arial", 20));
+        VBox vBox=new VBox();vBox.setSpacing(5);
+        VBox vBox1=new VBox();vBox1.setSpacing(5);
+        vBox.getChildren().addAll(label,table,label1);
+        vBox1.getChildren().addAll(label2,tableView);
+        BorderPane borderPane=new BorderPane();
+        borderPane.setLeft(vBox);
+        borderPane.setRight(vBox1);
+        Stage stage=new Stage();
+        Scene scene=new Scene(borderPane);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setScene(scene);stage.setTitle("统计");
+        stage.show();
+    }
+}
+
+//保存
+class Preservation {
+    public static String driver="com.mysql.cj.jdbc.Driver";
+    public static String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+    public static String user = "root";
+    public static String password = "root";
+    public static void preservation()
+    {
+        Connection connection= null;Statement statement= null;ResultSet resultSet = null;
+        try {
+            OutputStreamWriter output = new OutputStreamWriter(new FileOutputStream
+                    ("C:/Users/fengzhu/Desktop/成绩信息.txt"), StandardCharsets.UTF_8);
+            BufferedWriter bw=new BufferedWriter(output);
+            Class.forName(driver);
+            connection = DriverManager.getConnection(url, user, password);
+            statement = connection.createStatement();
+            resultSet=statement.executeQuery("SELECT * FROM student ");
+            bw.write("      sNo"+"\t\t"+"sName"+"\t"+"sSex"+"\t"+"sAge"+"\t"+"sDept"+"\t"
+                    +"sClass"+"\t"+"cNo"+"\t"+"cName"+"\t"+"grade\t\n");
+            while(resultSet.next())
+            {
+                bw.write(resultSet.getString(1)+"\t"+
+                        resultSet.getString(2)+"\t"+resultSet.getString(3)+"\t"+
+                        resultSet.getString(4)+"\t"+ resultSet.getString(5)+"\t"+
+                        resultSet.getString(6)+"\t"+resultSet.getString(7)+"\t"+
+                        resultSet.getString(8)+"\t"+resultSet.getInt(9)+"\n");
+            }
+            bw.close();
+            output.close();
+        } catch (Exception e1) {
+            e1.printStackTrace();
+        }
+        finally {
+            try {
+                if(resultSet!=null) {
+                    resultSet.close();
+                }
+                if(statement!=null) {
+                    statement.close();
+                }
+                if(connection!=null) {
+                    connection.close();
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        }
+        Alert alert=new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("提示");
+        alert.setHeaderText(null);
+        alert.setContentText("数据存入成功");
+        alert.showAndWait();
+    }
+}
+
+//读取
+class Read {
+    public static void read()
+    {
+        TextArea textArea=new TextArea();
+        String thisLine;
+        try (FileReader fr=new FileReader("C:/Users/fengzhu/Desktop/成绩信息.txt");
+             BufferedReader br=new BufferedReader(fr)
+        )
+        {
+            while((thisLine=br.readLine())!=null)
+            {
+                textArea.appendText(thisLine+"\n");
+            }
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        Stage stage=new Stage();stage.setTitle("读取");
+        BorderPane borderPane=new BorderPane();
+        borderPane.setCenter(textArea);
+        //ScrollPane scrollPane=new ScrollPane(textArea);
+        Scene scene=new Scene(borderPane,520,300);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setScene(scene);
+        stage.show();
+    }
+}
+//按单科成绩排名
+class Sort{
+    //同样定义TableView参数类
+    static class subject extends Statistics.sta {
+        final SimpleIntegerProperty score=new SimpleIntegerProperty();
+        public void setScore(int score) { this.score.set(score); }
+        public subject(String sNo, String sName, String sSex, String sAge, String sDept, String sClass, int score, int rank) {
+            super();setSNo(sNo);setSName(sName);setSSex(sSex);setSAge(sAge);setSDept(sDept);
+            setSClass(sClass);setScore(score);setRank(rank);
+        }
+    }
+    public static String driver="com.mysql.cj.jdbc.Driver";
+    public static String url = "jdbc:mysql://localhost:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC";
+    public static String user = "root";
+    public static String password = "root";
+    public static void subjectSort()
+    {
+        //为用户提供选择 要查看哪一门课程的排名统计
+        String[] cN={"0001","0002","0003","0004","0005","0006","0007"};
+        ObservableList<String> item4=FXCollections.observableArrayList(cN);
+        ComboBox<String> courseNumber=new ComboBox<>(item4);courseNumber.setValue("0001");
+        String[] le={"高等数学","线性代数","大学英语","数据结构","数据库","C语言","JavaSE"};
+        ObservableList<String> item3=FXCollections.observableArrayList(le);
+        ComboBox<String> courseName=new ComboBox<>(item3);courseName.setValue("高等数学");
+        courseNumber.setOnAction(e->{
+            if(Objects.equals(courseNumber.getValue(), "0001")) {
+                courseName.setValue("高等数学");
+            } else if(Objects.equals(courseNumber.getValue(), "0002")) {
+                courseName.setValue("线性代数");
+            } else if(Objects.equals(courseNumber.getValue(), "0003")) {
+                courseName.setValue("大学英语");
+            } else if(Objects.equals(courseNumber.getValue(), "0004")) {
+                courseName.setValue("数据结构");
+            } else if(Objects.equals(courseNumber.getValue(), "0005")) {
+                courseName.setValue("数据库");
+            } else if(Objects.equals(courseNumber.getValue(), "0006")) {
+                courseName.setValue("C语言");
+            } else {
+                courseName.setValue("JavaSE");
+            }
+        });
+        courseName.setOnAction(e->{
+            if(Objects.equals(courseName.getValue(), "高等数学")) {
+                courseNumber.setValue("0001");
+            } else if(Objects.equals(courseName.getValue(), "线性代数")) {
+                courseNumber.setValue("0002");
+            } else if(Objects.equals(courseName.getValue(), "大学英语")) {
+                courseNumber.setValue("0003");
+            } else if(Objects.equals(courseName.getValue(), "数据结构")) {
+                courseNumber.setValue("0004");
+            } else if(Objects.equals(courseName.getValue(), "数据库")) {
+                courseNumber.setValue("0005");
+            } else if(Objects.equals(courseName.getValue(), "C语言")) {
+                courseNumber.setValue("0006");
+            } else {
+                courseNumber.setValue("0007");
+            }
+        });
+        Button button=new Button("确认");
+        HBox hBox=new HBox();hBox.setSpacing(5);
+        hBox.getChildren().addAll(courseNumber,courseName,button);
+        Stage stage=new Stage();stage.setTitle("单科成绩排名查询");
+        Scene scene=new Scene(hBox,400,100);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        stage.setScene(scene);
+        stage.show();
+        button.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> button.setCursor(Cursor.HAND));
+        button.addEventHandler(MouseEvent.MOUSE_EXITED, e -> button.setCursor(Cursor.DEFAULT));
+        button.setOnAction(e->{
+            String cNO=courseNumber.getValue();
+            String lesson=courseName.getValue();
+            TableView table=new TableView();
+            table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            table.setEditable(true);
+            TableColumn<subject, String> sNoColumn=new TableColumn<>("studentNo");
+            TableColumn<subject, String> sNameColumn=new TableColumn<>("studentName");
+            TableColumn<subject, String> sSexColumn=new TableColumn<>("studentSex");
+            TableColumn<subject, String> sAgeColumn=new TableColumn<>("studentAge");
+            TableColumn<subject, String> sDeptColumn=new TableColumn<>("studentDept");
+            TableColumn<subject, String> sClassColumn= new TableColumn<>("studentClass");
+            TableColumn<subject,Integer> scoreColumn= new TableColumn<>("score");
+            TableColumn<subject,Integer> rankColumn= new TableColumn<>("rank");
+            sNoColumn.setMinWidth(100);sNameColumn.setMinWidth(100);sSexColumn.setMinWidth(100);
+            sAgeColumn.setMinWidth(100);sDeptColumn.setMinWidth(100);sClassColumn.setMinWidth(100);
+            scoreColumn.setMinWidth(100);rankColumn.setMinWidth(100);
+            sNoColumn.setCellValueFactory(e1->e1.getValue().studentNo);
+            sNameColumn.setCellValueFactory(e1->e1.getValue().studentName);
+            sSexColumn.setCellValueFactory(e1->e1.getValue().studentSex);
+            sAgeColumn.setCellValueFactory(e1->e1.getValue().studentAge);
+            sDeptColumn.setCellValueFactory(e1->e1.getValue().studentDept);
+            sClassColumn.setCellValueFactory(e1->e1.getValue().studentClass);
+            scoreColumn.setCellValueFactory(e1->e1.getValue().score.asObject());
+            rankColumn.setCellValueFactory(e1->e1.getValue().rank.asObject());
+            table.getColumns().addAll(sNoColumn,sNameColumn,sSexColumn,sAgeColumn,sDeptColumn,
+                    sClassColumn,scoreColumn,rankColumn);
+            ObservableList<subject> data =FXCollections.observableArrayList();
+            try {
+                //按单科成绩查询
+                String selectSql="SELECT sNo,sName,sSex,sAge,sDept,sClass,grade FROM student WHERE cNo=? AND cName=? ORDER BY grade DESC";
+                Class.forName(driver);
+                Connection conn = DriverManager.getConnection(url, user, password);
+                PreparedStatement ps = conn.prepareStatement(selectSql);
+                ps.setString(1,cNO);
+                ps.setString(2, lesson);
+                ResultSet resultSet = ps.executeQuery();
+                //用于赋予排名
+                int rank=1;
+                while(resultSet.next())
+                {
+                    data.add(new subject(resultSet.getString(1),
+                            resultSet.getString(2),
+                            resultSet.getString(3),
+                            resultSet.getString(4),
+                            resultSet.getString(5),
+                            resultSet.getString(6),
+                            resultSet.getInt(7),rank++));
+                }
+                table.setItems(data);
+            }catch (Exception e2){
+                e2.printStackTrace();
+            }
+            Label label=new Label("科目名:");
+            final Label label1 = new Label(lesson);
+            label.setFont(new Font("Arial", 20));
+            VBox vBox=new VBox();vBox.setSpacing(5);
+            vBox.getChildren().addAll(label,table,label1);
+            BorderPane borderPane=new BorderPane();
+            borderPane.setTop(vBox);
+            borderPane.setCenter(table);
+            Stage stage1=new Stage();
+            Scene scene1=new Scene(borderPane);
+            scene1.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+            stage1.setScene(scene1);
+            stage1.show();
+        });
+    }
+}
+
+public class Main extends Application {
+    public static void main(String[] args) { launch(args); }
+    @Override
+    public void start(Stage primaryStage)
+    {
+        //主界面是BorderPane
+        VBox hL=new VBox(20);//左边的列面板
+        hL.setFillWidth(true);hL.setPadding(new Insets(5));
+        Button add=new Button("添加");
+        Button query=new Button("查询");
+        Button delete=new Button("删除");
+        Button statistics=new Button("统计");
+        Button preservation=new Button("保存");
+        Button read=new Button("读取");
+        Button sort=new Button("排序");
+        Button refresh=new Button("刷新");
+        Button[] buttons=new Button[]{add,query,delete,statistics,preservation,read,sort,refresh};
+        for(int i=0;i<buttons.length;i++)
+        {
+            Button button=buttons[i];
+            //给按钮设置鼠标移入就显示手型  移除就展示箭头
+            button.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> button.setCursor(Cursor.HAND));
+            button.addEventHandler(MouseEvent.MOUSE_EXITED, e -> button.setCursor(Cursor.DEFAULT));
+            if (i < 4) {
+                button.setStyle("-fx-background-color: #6CB5B5; -fx-padding: 10px 12px;");
+            } else {
+                button.setStyle("-fx-background-color: #ff9999; -fx-padding: 10px 12px;");
+            }
+            button.setFont(new Font(15));
+        }
+
+        hL.getChildren().addAll(add,query,delete,statistics,preservation,read,sort,refresh);
+        BorderPane borderPane=new BorderPane();
+        borderPane.setLeft(hL);
+        borderPane.setRight(Display.displayTable());
+        Scene scene=new Scene(borderPane,960,470);
+        scene.getStylesheets().add("FinalSystemDesign/CascadingStyleSheet.css");
+        primaryStage.setTitle("学生成绩管理系统");
+        primaryStage.setScene(scene);
+        primaryStage.show();
+
+        query.setOnAction(e-> Query_Edit.query());//查询事件触发
+        add.setOnAction(e-> Add.add());//添加事件触发
+        delete.setOnAction(e->Delete.delete());//删除事件触发
+        refresh.setOnAction(e-> borderPane.setRight(Display.displayTable()));//刷新事件触发
+        statistics.setOnAction(e->Statistics.statistics());//统计事件触发
+        preservation.setOnAction(e->Preservation.preservation());//保存事件触发
+        read.setOnAction(e->Read.read());//读取事件触发
+        sort.setOnAction(e->Sort.subjectSort());//排序事件触发
+    }
+}
