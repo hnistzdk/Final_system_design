@@ -1,0 +1,21 @@
+package nuandong;
+
+/**
+ * @author chenzheng
+ * @createTime 2020年12月05日
+ */
+public interface Consts {
+    //接口里面定义的变量都是常量哈。
+    int VIP_TYPE = 1;
+    int COMMON_TYPE = 2;
+    /**
+     * 业务最大的服务时间
+     */
+    int MAX_SERVICE_TIME = 10;
+    /**
+     * 业务最小的服务时间
+     */
+    int MIN_SERVICE_TIME = 1;
+
+
+}
