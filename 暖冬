@@ -1,0 +1,290 @@
+package nuandong;
+
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.Insets;
+import javafx.scene.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
+
+import java.util.*;
+class NumberInfo{
+    int no;//编号
+    Date getNumberTime;
+    Date handleTime;
+    int state;//是否处理的状态 0是未处理 1是处理 2是正在处理
+    public int getNo() {
+        return no;
+    }
+    public void setNo(int no) {
+        this.no = no;
+    }
+    public Date getGetNumberTime() {
+        return getNumberTime;
+    }
+    public void setGetNumberTime(Date getNumberTime) {
+        this.getNumberTime = getNumberTime;
+    }
+    public Date getHandleTime() {
+        return handleTime;
+    }
+    public void setHandleTime(Date handleTime) {
+        this.handleTime = handleTime;
+    }
+    public int getState() {
+        return state;
+    }
+    public void setState(int state) {
+        this.state = state;
+    }
+
+}
+
+class NumberGenerateMachine{
+    //初始的开始数字 每取号一次 数字加一
+    int count;
+    //存号码的容器
+    List<NumberInfo> lists=new LinkedList<>();
+    //保存拿走的号码
+    List<NumberInfo> hasRemovedNumber=new LinkedList<>();
+    public synchronized NumberInfo generateNumberInfo() {
+        //生成号码编号
+        count++;
+        NumberInfo numberInfo=new NumberInfo();
+        numberInfo.setNo(count);
+        numberInfo.setState(0);
+        lists.add(numberInfo);
+        return numberInfo;
+    }
+    public synchronized NumberInfo getNumberInfo(){
+        if(lists.size()>0) {
+            NumberInfo numberInfo=lists.remove(0);
+            numberInfo.setState(2);//表示正在处理
+            //用一个集合来保存拿走的号码
+            hasRemovedNumber.add(numberInfo);
+            return numberInfo;
+        }
+        else{
+            return null;//表示没拿到
+        }
+    }
+    public synchronized void updateToFinish(int no){
+        for(NumberInfo numberInfo:hasRemovedNumber){
+            if(numberInfo.getNo()==no){
+                numberInfo.setState(1);
+                numberInfo.setHandleTime(new Date());break;
+            }
+        }
+    }
+}
+//针对不同的窗口生成不同的号码生成器
+class NumberGenerateMachineManger{
+    static NumberGenerateMachine commonMachine=new NumberGenerateMachine();
+    static NumberGenerateMachine vipMachine=new NumberGenerateMachine();
+    private NumberGenerateMachineManger(){ }
+    public static NumberGenerateMachine getCommonMachine(){
+        return commonMachine;
+    }
+    public static NumberGenerateMachine getVipMachine(){
+        return vipMachine;
+    }
+}
+//不同窗口有不同的业务处理逻辑
+class ServiceWindow implements Runnable{
+    int serviceWindowType;
+    //窗口编号
+    int serviceWindowNo;
+    public ServiceWindow(int Type) {
+        this.serviceWindowType=Type;
+    }
+    @Override
+    public void run() {
+        while(true)
+        {
+            if(serviceWindowType==Consts.VIP_TYPE){
+                vipService();
+            }
+            else if(serviceWindowType==Consts.COMMON_TYPE){
+                commonService();
+            }
+        }
+    }
+   private void myAppend(String string) {
+         //在JAVAfx里面如果要在其他子线程去更新主线程的ui界面 需要这样子写
+        synchronized (MainClass.textArea) {
+            Platform.runLater(() -> {
+                MainClass.textArea.appendText(string+"\n");
+            });
+        }
+    }
+    private void myAppend1(String string) {
+        synchronized (MainClass.textArea1) {
+            Platform.runLater(() -> MainClass.textArea1.appendText(string+"\n"));
+        }
+    }
+    private void myAppend2(String string) {
+        synchronized (MainClass.textArea2) {
+            Platform.runLater(() -> MainClass.textArea2.appendText(string+"\n"));
+        }
+    }
+    public void commonService(){
+        NumberInfo numberInfo=NumberGenerateMachineManger.getCommonMachine().getNumberInfo();
+        String type="";
+        if(serviceWindowType==Consts.VIP_TYPE){
+            type="vip";
+        }
+        else if(serviceWindowType==Consts.COMMON_TYPE){
+            type="普通";
+        }
+        if(numberInfo!=null)
+        {
+            if(Objects.equals(type, "普通")) {
+                myAppend1("普通用户"+numberInfo.getNo()+"业务还未处理\n");
+                myAppend1(type+"窗口正在为"+"普通用户"+numberInfo.getNo()+"服务\n");
+            }
+            else if(Objects.equals(type, "vip")){
+                myAppend2("普通用户"+numberInfo.getNo()+"业务还未处理\n");
+                myAppend2(type+"窗口正在为"+"普通用户"+numberInfo.getNo()+"服务\n");
+            }
+            myAppend(type+"窗口正在为"+"普通用户"+numberInfo.getNo()+"服务\n");
+            Random random=new Random();
+            int time=random.nextInt(Consts.MAX_SERVICE_TIME)+Consts.MIN_SERVICE_TIME;
+            try {
+                Thread.sleep(time*1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            if(Objects.equals(type, "普通")){
+
+                myAppend1("普通用户"+numberInfo.getNo()+"的业务处理完成 "+"耗时"+time+"秒\n");
+            }
+            else if(Objects.equals(type, "vip"))
+            {
+                myAppend2("普通用户"+numberInfo.getNo()+"的业务处理完成 "+"耗时"+time+"秒\n");
+            }
+            myAppend(type+"窗口为普通用户"+numberInfo.getNo()+"服务了"+time+"秒"+"\n");
+            NumberGenerateMachineManger.getCommonMachine().updateToFinish(numberInfo.getNo());
+        }
+    }
+    public void vipService(){
+        NumberInfo numberInfo=NumberGenerateMachineManger.getVipMachine().getNumberInfo();
+        if(numberInfo!=null)
+        {
+            myAppend2("vip用户"+numberInfo.getNo()+"业务还未处理\n");
+            myAppend2("vip窗口正在为 "+"vip用户"+numberInfo.getNo()+" 服务");
+            myAppend("vip窗口正在为 "+"vip用户"+numberInfo.getNo()+" 服务");
+            Random random=new Random();
+            int time=random.nextInt(Consts.MAX_SERVICE_TIME)+Consts.MIN_SERVICE_TIME;
+            try {
+                Thread.sleep(time*1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            myAppend("vip窗口为vip用户"+numberInfo.getNo()+" 服务了 "+time+"秒"+"\n");
+            myAppend2("vip用户"+numberInfo.getNo()+"的业务处理完成 "+"耗时"+time+"秒\n");
+            NumberGenerateMachineManger.getVipMachine().updateToFinish(numberInfo.getNo());
+        }
+        else{
+            commonService();
+        }
+    }
+}
+
+public class MainClass extends Application {
+
+    static TextArea textArea = new TextArea();//主界面展示的每个窗口的业务办理情况
+    static TextArea textArea1=new TextArea();//普通窗口业务办理情况
+    static TextArea textArea2=new TextArea();//vip窗口业务办理情况
+    @Override
+    public void start(Stage primaryStage) {
+        FlowPane pane = new FlowPane();
+        pane.setPadding(new Insets(11, 12, 13, 14));
+        pane.setHgap(5);//设置控件之间的垂直间隔距离
+        pane.setVgap(5);//设置控件之间的水平间隔距离
+        textArea.setPrefRowCount(10);//指定行数
+        Label lbName = new Label("各窗口业务处理情况：");
+        lbName.setFont(new Font(15));
+
+        Button okBtn = new Button("普通窗口取号");
+        Button okBtn1 = new Button("VIP窗口取号");
+        Button okBtn2 = new Button("普通窗口处理情况");
+        Button okBtn3 = new Button("VIP窗口处理情况");
+        Button[] buttons = new Button[]{okBtn, okBtn1, okBtn2, okBtn3};
+        for (int i = 0; i < buttons.length; i++) {
+            Button button = buttons[i];
+            //给按钮设置鼠标移入就显示手型  移除就展示箭头
+            button.addEventHandler(MouseEvent.MOUSE_ENTERED, e-> button.setCursor(Cursor.HAND));
+            button.addEventHandler(MouseEvent.MOUSE_EXITED, e -> button.setCursor(Cursor.DEFAULT));
+            if (i < 2) {
+                button.setStyle("-fx-background-color: #6CB5B5; -fx-padding: 10px 12px;");
+            } else {
+                button.setStyle("-fx-background-color: #ff9999; -fx-padding: 10px 12px;");
+            }
+            button.setFont(new Font(15));
+        }
+        EventHandler eventHandler = (EventHandler<ActionEvent>) event -> {
+            int person=NumberGenerateMachineManger.getCommonMachine().lists.size()
+                    +NumberGenerateMachineManger.getVipMachine().lists.size();
+            NumberInfo numberInfo = NumberGenerateMachineManger.getCommonMachine().generateNumberInfo();
+            textArea.appendText("取到common " + numberInfo.getNo()+"\n");
+            textArea.appendText("前方还有"+person+"人在排队"+" 预计最大排队时间为:"+person*10+"秒\n");
+            System.out.println("取到common " + numberInfo.getNo());
+        };
+        okBtn.setOnAction(eventHandler);
+
+        EventHandler eventHandlerVip = (EventHandler<ActionEvent>) event -> {
+            int person=NumberGenerateMachineManger.getCommonMachine().lists.size()
+                    +NumberGenerateMachineManger.getVipMachine().lists.size();
+            NumberInfo numberInfo = NumberGenerateMachineManger.getVipMachine().generateNumberInfo();
+            textArea.appendText("取到vip " + numberInfo.getNo()+"\n");
+            textArea.appendText("前方还有"+person+"人在排队"+" 预计最大排队时间为:"+person*10+"秒\n");
+            System.out.println("取到vip " + numberInfo.getNo());
+        };
+        okBtn1.setOnAction(eventHandlerVip);
+        okBtn2.setOnAction(
+                event -> {
+                    Stage dialog = new Stage();
+                    VBox dialogVbox = new VBox(20);
+                    dialogVbox.getChildren().add(textArea1);
+                    Scene dialogScene = new Scene(dialogVbox, 300, 200);
+                    dialog.setScene(dialogScene);dialog.setTitle("普通窗口处理情况");
+                    dialog.show();
+                });
+        okBtn3.setOnAction(
+                event -> {
+                    Stage dialog1 = new Stage();
+                    VBox dialogVbox1 = new VBox(20);
+                    dialogVbox1.getChildren().add(textArea2);
+                    Scene dialogScene = new Scene(dialogVbox1, 300, 200);
+                    dialog1.setScene(dialogScene);dialog1.setTitle("vip窗口处理情况");
+                    dialog1.show();
+                });
+        pane.getChildren().addAll(lbName, textArea, okBtn, okBtn1, okBtn2, okBtn3);
+        Scene scene = new Scene(pane);
+        Stage stage = new Stage();
+        stage.setResizable(false);
+        stage.setScene(scene);
+        stage.setTitle("移动智能叫号排号系统");
+        stage.setHeight(300);
+        stage.setWidth(600);
+        stage.show();
+        //窗口先用运行起来  然后去取号
+        ServiceWindow common = new ServiceWindow(Consts.COMMON_TYPE);
+        ServiceWindow vip = new ServiceWindow(Consts.VIP_TYPE);
+        Thread threadCommon = new Thread(common);
+        Thread threadVip = new Thread(vip);
+        threadCommon.start();
+        threadVip.start();
+    }
+    public static void main(String[] args) {
+        launch(args);
+    }
+}
